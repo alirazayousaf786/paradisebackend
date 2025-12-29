@@ -1,8 +1,10 @@
+
 import AddBlogModel from "../models/AddBlog.js";
 
+// Add Blog
 export const AddBlog = async (req, res) => {
   try {
-    const { addBlogTitle, addBlogParagraph } = req.body;
+    const { addBlogTitle, addBlogParagraph, promotionPercentage } = req.body;
     const image = req.file ? `/uploads/${req.file.filename}` : null;
 
     if (!image || !addBlogTitle || !addBlogParagraph) {
@@ -13,6 +15,7 @@ export const AddBlog = async (req, res) => {
       addBlogTitle,
       addBlogParagraph,
       imageBlogURL: image,
+      promotionPercentage: promotionPercentage || 0, // optional
     });
 
     res.status(201).json(newBlog);
@@ -22,6 +25,7 @@ export const AddBlog = async (req, res) => {
   }
 };
 
+// Get All Blogs
 export const getAllBlog = async (req, res) => {
   try {
     const allBlog = await AddBlogModel.find();
@@ -31,10 +35,11 @@ export const getAllBlog = async (req, res) => {
   }
 };
 
+// Update Blog
 export const updateBlog = async (req, res) => {
   try {
     const { id } = req.params;
-    const { addBlogTitle, addBlogParagraph } = req.body;
+    const { addBlogTitle, addBlogParagraph, promotionPercentage } = req.body;
     const image = req.file ? `/uploads/${req.file.filename}` : undefined;
 
     const updatedBlog = await AddBlogModel.findByIdAndUpdate(
@@ -43,6 +48,7 @@ export const updateBlog = async (req, res) => {
         ...(addBlogTitle && { addBlogTitle }),
         ...(addBlogParagraph && { addBlogParagraph }),
         ...(image && { imageBlogURL: image }),
+        ...(promotionPercentage !== undefined && { promotionPercentage }), // optional update
       },
       { new: true }
     );
@@ -57,6 +63,7 @@ export const updateBlog = async (req, res) => {
   }
 };
 
+// Delete Blog
 export const deleteBlog = async (req, res) => {
   try {
     const { id } = req.params;
@@ -67,6 +74,27 @@ export const deleteBlog = async (req, res) => {
     }
 
     res.status(200).json({ message: "Blog deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// ✅ New: Update Promotion Only
+export const updateBlogPromotion = async (req, res) => {
+  try {
+    const { blogId, promotion } = req.body;
+
+    const blog = await AddBlogModel.findById(blogId);
+    if (!blog) return res.status(404).json({ message: "Blog not found" });
+
+    blog.promotionPercentage = promotion;
+    await blog.save();
+
+    res.json({
+      success: true,
+      message: `Promotion updated to ${promotion}%`,
+      promotionPercentage: blog.promotionPercentage,
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
